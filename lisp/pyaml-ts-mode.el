@@ -379,7 +379,9 @@ is t or contains the mode name."
   (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . pyaml-ts-mode-maybe))
   ;; To be able to toggle between an external package and pyaml-ts-mode:
   (add-to-list 'treesit-major-mode-remap-alist
-               '(yaml-mode . pyaml-ts-mode)))
+               '(yaml-mode . pyaml-ts-mode))
+  (add-to-list 'treesit-major-mode-remap-alist
+               '(yaml-ts-mode . pyaml-ts-mode)))
 
 ;;;###autoload
 (progn
