@@ -127,3 +127,31 @@ git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 git fetch --all --tags
 git remote add -f upstream-copy git@github.com:steve-downey/emacs.git
 #+end_src
+
+** Split the emacs repo
+#+begin_src bash
+# In the upstream-copy workarea
+cd master/
+git worktree add -b track-split-lisp-textmodes ../track-split-lisp-textmodes
+cd ../track-split-lisp-textmodes
+git subtree split --prefix=lisp/textmodes/ --branch=split-lisp-textmodes --rejoin
+git subtree add ./split-lisp-textmodes
+
+#+end_src
+
+** Pull the split into pyaml  and create pyaml-ts-mode.el
+#+begin_src bash
+git subtree add --prefix=lisp upstream-copy split-lisp-textmodes
+git branch -c split-lisp-textmodes track-upstream-split-lisp-textmodes
+cd ../split-lisp-textmodes
+git switch -b create-pyaml
+## delete all of the textmode files except yaml-ts-mode.el
+## git mv yaml-ts-mode.el to pyaml-ts-mode.el
+## commit the result to track upstream
+cd ../main
+git merge --ff-only create-pyaml
+#+end_src
+
+** Start the rest of the work.
+
+* TBD -- How this works out next update
