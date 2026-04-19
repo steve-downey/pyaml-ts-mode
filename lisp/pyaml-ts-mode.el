@@ -1,13 +1,15 @@
 ;;; pyaml-ts-mode.el --- tree-sitter support for PYAML  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2022-2026 Free Software Foundation, Inc.
+;; Copyright (C) 2026 Steve Downey
 
 ;; Author     : Randy Taylor <dev@rjt.dev>
-;; Maintainer : Randy Taylor <dev@rjt.dev>
+;; Author     : Steve Downey <sdowney@sdowney.org>
+;; Maintainer : Steve Downey <sdowney@sdowney.org>
 ;; Created    : December 2022
 ;; Keywords   : yaml languages tree-sitter prog-mode
 
-;; This file is part of GNU Emacs.
+;; This file is NOT part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
