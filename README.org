@@ -1,2 +1,131 @@
 * pyaml-ts-mode
 Prog-mode YAML treesitter mode
+
+#+TITLE: Forking parts of Emacs with ~git subtree~
+#+DATE: {{{modification-time(%Y-%m-%d, VC)}}}
+#+AUTHOR: Steve Downey
+#+EMAIL: sdowney@gmail.com
+
+#+description: An explanation of why standards organizations exist
+#+keywords:
+#+language: en
+
+#+org-export-with-smart-quotes: nil
+#+org-export-with-emphasize: t
+#+org-export-with-special-strings: t
+#+org-export-with-fixed-width: t
+#+org-export-with-timestamps: t
+#+org-export-preserve-breaks: nil
+#+org-export-with-sub-superscripts: nil
+#+org-export-with-archived-trees: headline
+#+org-export-with-author: t
+#+org-export-headline-levels: 3
+
+#+org-export-with-broken-links: nil
+#+org-export-with-clocks: nil
+#+org-export-with-creator: nil
+#+org-export-with-drawers: (not "LOGBOOK")
+#+org-export-with-date: t
+#+org-export-with-entities: t
+
+#+org-export-with-email: nil
+#+org-export-with-footnotes: t
+#+org-export-with-inlinetasks: t
+#+org-export-with-section-numbers: t
+#+org-export-with-planning: nil
+#+org-export-with-priority: nil
+#+org-export-with-properties: nil
+#+org-export-with-statistics-cookies: t
+#+org-export-with-tags: t
+
+#+org-export-with-tasks: t
+#+org-export-with-latex: t
+#+org-export-timestamp-file: t
+#+org-export-with-title: n
+#+org-export-with-toc: nil
+#+org-export-with-todo: t
+#+org-export-with-tables: t
+
+#+org-html-link-use-abs-url: nil
+#+org-html-postamble: nil
+#+org-html-preamble: t
+#+org-html-scripts: n
+#+org-html-style: nil
+#+org-html5-fancy: t
+#+org-html-self-link-headlines: t
+
+#+html_doctype: xhtml5
+#+html_container: div
+#+html_link_home:
+#+html_link_up:
+#+html_mathjax:
+#+html_head:
+#+html_head_extra:
+#+infojs_opt:
+
+#+select_tags: export
+#+exclude_tags: noexport
+
+#+bibliography: ../references.bib
+#+cite_export: basic author-year author
+
+#+startup: showall
+
+#+begin_abstract
+Responsibly forking ~yaml-ts-mode~ to be a prog-mode.
+
+Use ~git-subtree~ to track the upstream(s) in GitHub and locally.
+
+#+end_abstract
+
+* Getting Started
+** Fork emacs-mirror/mirror and set up tracking
+I will be working in ~/src/emacs-mirror/
+#+begin_src bash
+mkdir upstream-copy && cd upstream-copy
+gh repo fork --clone emacs-mirror/emacs -- --bare
+cd emacs.git
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git config remote.upstream.fetch "+refs/heads/*:refs/remotes/upstream/*"
+git fetch --all --tags
+#+end_src
+
+Setting up a bare local repository makes it easier to manage the multiple independent branches as indepenedent worktrees. Otherwise I will make mistakes trying to switch back and forth. Fortunately nothing is every truely lost with ~git~.
+
+emacs.git/config
+#+begin_src conf
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = true
+[remote "origin"]
+	url = git@github.com:steve-downey/emacs.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "upstream"]
+	url = git@github.com:emacs-mirror/emacs.git
+	fetch = +refs/heads/*:refs/remotes/upstream/*
+	gh-resolved = base
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+#+end_src
+
+Create worktrees
+#+begin_src bash
+git worktree add ../master master
+git worktree add  -b upstream-master ../upstream-master master
+git branch -u upstream/master upstream-master
+git push origin upstream-master
+#+end_src
+
+The ~upstream-master~ branch with be a pristine, never touched, exact, copy of upstream/master.  All sync work and updates will happen in ~master~ . This will mean some synthetic commit history tracking subtree information, but should not generally not create actual new file objects, since they will be identical.
+
+** PYaml Repo
+#+begin_src bash
+gh repo new pyaml-ts-mode --add-readme --description "Prog-mode YAML treesitter mode" --gitignore Elisp --license gpl-3.0 --public
+gh repo clone steve-downey/pyaml-ts-mode -- --bare
+cd pyaml-ts-mode.git
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git fetch --all --tags
+git remote add -f upstream-copy git@github.com:steve-downey/emacs.git
+#+end_src
