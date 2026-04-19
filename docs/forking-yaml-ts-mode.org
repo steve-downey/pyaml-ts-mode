@@ -3,7 +3,7 @@
 #+AUTHOR: Steve Downey
 #+EMAIL: sdowney@gmail.com
 
-#+description: An explanation of why standards organizations exist
+#+html:<!-- This text will not be visible in the rendered view
 #+keywords:
 #+language: en
 
@@ -67,6 +67,7 @@
 #+cite_export: basic author-year author
 
 #+startup: showall
+#+html:-->
 
 #+begin_abstract
 Responsibly forking ~yaml-ts-mode~ to be a prog-mode.

@@ -3,79 +3,29 @@
 #+AUTHOR: Steve Downey
 #+EMAIL: sdowney@gmail.com
 
-#+org-export-with-smart-quotes: nil
-#+org-export-with-emphasize: t
-#+org-export-with-special-strings: t
-#+org-export-with-fixed-width: t
-#+org-export-with-timestamps: t
-#+org-export-preserve-breaks: nil
-#+org-export-with-sub-superscripts: nil
-#+org-export-with-archived-trees: headline
-#+org-export-with-author: t
-#+org-export-headline-levels: 3
-
-#+org-export-with-broken-links: nil
-#+org-export-with-clocks: nil
-#+org-export-with-creator: nil
-#+org-export-with-drawers: (not "LOGBOOK")
-#+org-export-with-date: t
-#+org-export-with-entities: t
-
-#+org-export-with-email: nil
-#+org-export-with-footnotes: t
-#+org-export-with-inlinetasks: t
-#+org-export-with-section-numbers: t
-#+org-export-with-planning: nil
-#+org-export-with-priority: nil
-#+org-export-with-properties: nil
-#+org-export-with-statistics-cookies: t
-#+org-export-with-tags: t
-
-#+org-export-with-tasks: t
-#+org-export-with-latex: t
-#+org-export-timestamp-file: t
-#+org-export-with-title: n
-#+org-export-with-toc: nil
-#+org-export-with-todo: t
-#+org-export-with-tables: t
-
-#+org-html-link-use-abs-url: nil
-#+org-html-postamble: nil
-#+org-html-preamble: t
-#+org-html-scripts: n
-#+org-html-style: nil
-#+org-html5-fancy: t
-#+org-html-self-link-headlines: t
-
-#+html_doctype: xhtml5
-#+html_container: div
-#+html_link_home:
-#+html_link_up:
-#+html_mathjax:
-#+html_head:
-#+html_head_extra:
-#+infojs_opt:
-
-#+select_tags: export
-#+exclude_tags: noexport
-
-#+bibliography: ../references.bib
-#+cite_export: basic author-year author
-
 #+startup: showall
 
 * ~pyaml-ts-mode~
 Prog-mode YAML treesitter mode
 
-** Installation
+* Installation
 #+begin_src elisp
 (use-package pyaml-ts-mode
-  :commands (pyaml-ts-mode pyaml-ts-mode-version)
+  :commands (pyaml-ts-mode pyaml-ts-mode-install-grammars pyaml-ts-mode-version)
   :vc (:url "https://github.com/steve-downey/pyaml-ts-mode.git"
             :lisp-dir "lisp"
             :rev :newest)
- )
+  :mode ("\\.ya?ml\\'" . pyaml-ts-mode)
+  :init
+  (add-to-list 'major-mode-remap-alist '(yaml-mode . pyaml-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(yaml-ts-mode . pyaml-ts-mode))
+  )
 #+end_src
 
-** Method for tracking upstream
+* Commands
+- [[file:lisp/pyaml-ts-mode.el::define-derived-mode pyaml-ts-mode][pyaml-ts-mode]] :: Toggle the mode.
+- [[file:lisp/pyaml-ts-mode.el::defun pyaml-ts-mode-install-grammars][pyaml-ts-mode-install-grammars]] :: (Re-)Install the tree-sitter grammar.
+- [[file:lisp/pyaml-ts-mode.el::defun pyaml-ts-mode-version][pyaml-ts-mode-version]] :: Display the loaded version number.
+
+* Method for tracking upstream
 [[file:docs/forking-yaml-ts-mode.org][Forking yaml-ts-mode ]]
