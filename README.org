@@ -1,14 +1,7 @@
-* pyaml-ts-mode
-Prog-mode YAML treesitter mode
-
-#+TITLE: Forking parts of Emacs with ~git subtree~
+#+TITLE: Prog-mode yaml ts mode
 #+DATE: {{{modification-time(%Y-%m-%d, VC)}}}
 #+AUTHOR: Steve Downey
 #+EMAIL: sdowney@gmail.com
-
-#+description: An explanation of why standards organizations exist
-#+keywords:
-#+language: en
 
 #+org-export-with-smart-quotes: nil
 #+org-export-with-emphasize: t
@@ -71,61 +64,18 @@ Prog-mode YAML treesitter mode
 
 #+startup: showall
 
-#+begin_abstract
-Responsibly forking ~yaml-ts-mode~ to be a prog-mode.
+* ~pyaml-ts-mode~
+Prog-mode YAML treesitter mode
 
-Use ~git-subtree~ to track the upstream(s) in GitHub and locally.
-
-#+end_abstract
-
-* Getting Started
-** Fork emacs-mirror/mirror and set up tracking
-I will be working in ~/src/emacs-mirror/
-#+begin_src bash
-mkdir upstream-copy && cd upstream-copy
-gh repo fork --clone emacs-mirror/emacs -- --bare
-cd emacs.git
-git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-git config remote.upstream.fetch "+refs/heads/*:refs/remotes/upstream/*"
-git fetch --all --tags
+** Installation
+#+begin_src elisp
+(use-package pyaml-ts-mode
+  :commands (pyaml-ts-mode pyaml-ts-mode-version)
+  :vc (:url "https://github.com/steve-downey/pyaml-ts-mode.git"
+            :lisp-dir "lisp"
+            :rev :newest)
+ )
 #+end_src
 
-Setting up a bare local repository makes it easier to manage the multiple independent branches as indepenedent worktrees. Otherwise I will make mistakes trying to switch back and forth. Fortunately nothing is every truely lost with ~git~.
-
-emacs.git/config
-#+begin_src conf
-[core]
-	repositoryformatversion = 0
-	filemode = true
-	bare = true
-[remote "origin"]
-	url = git@github.com:steve-downey/emacs.git
-	fetch = +refs/heads/*:refs/remotes/origin/*
-[remote "upstream"]
-	url = git@github.com:emacs-mirror/emacs.git
-	fetch = +refs/heads/*:refs/remotes/upstream/*
-	gh-resolved = base
-[branch "master"]
-	remote = origin
-	merge = refs/heads/master
-#+end_src
-
-Create worktrees
-#+begin_src bash
-git worktree add ../master master
-git worktree add  -b upstream-master ../upstream-master master
-git branch -u upstream/master upstream-master
-git push origin upstream-master
-#+end_src
-
-The ~upstream-master~ branch with be a pristine, never touched, exact, copy of upstream/master.  All sync work and updates will happen in ~master~ . This will mean some synthetic commit history tracking subtree information, but should not generally not create actual new file objects, since they will be identical.
-
-** PYaml Repo
-#+begin_src bash
-gh repo new pyaml-ts-mode --add-readme --description "Prog-mode YAML treesitter mode" --gitignore Elisp --license gpl-3.0 --public
-gh repo clone steve-downey/pyaml-ts-mode -- --bare
-cd pyaml-ts-mode.git
-git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-git fetch --all --tags
-git remote add -f upstream-copy git@github.com:steve-downey/emacs.git
-#+end_src
+** Method for tracking upstream
+[[file:docs/forking-yaml-ts-mode.org][Forking yaml-ts-mode ]]
