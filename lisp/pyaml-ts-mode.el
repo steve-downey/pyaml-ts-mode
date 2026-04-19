@@ -1,11 +1,11 @@
-;;; yaml-ts-mode.el --- tree-sitter support for YAML  -*- lexical-binding: t; -*-
+;;; pyaml-ts-mode.el --- tree-sitter support for PYAML  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2022-2026 Free Software Foundation, Inc.
 
 ;; Author     : Randy Taylor <dev@rjt.dev>
 ;; Maintainer : Randy Taylor <dev@rjt.dev>
 ;; Created    : December 2022
-;; Keywords   : yaml languages tree-sitter
+;; Keywords   : yaml languages tree-sitter prog-mode
 
 ;; This file is part of GNU Emacs.
 
@@ -37,24 +37,27 @@
 
 (add-to-list
  'treesit-language-source-alist
- '(yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml"
-        :commit "b733d3f5f5005890f324333dd57e1f0badec5c87")
+ '(pyaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml"
+         :commit "4463985dfccc640f3d6991e3396a2047610cf5f8")
  t)
 
-(defgroup yaml-ts-mode nil
-  "Major mode for editing YAML files."
-  :prefix "yaml-ts-mode-"
+(add-to-list 'treesit-load-name-override-list
+             '(pyaml "libtree-sitter-pyaml" "tree_sitter_yaml"))
+
+(defgroup pyaml-ts-mode nil
+  "Major mode for editing PYAML files."
+  :prefix "pyaml-ts-mode-"
   :group 'languages)
 
-(defcustom yaml-ts-mode-yamllint-options nil
+(defcustom pyaml-ts-mode-yamllint-options nil
   "Additional options to pass to yamllint command used for Flymake support.
 This should be a list of strings, each one passed as a separate argument
 to the yamllint command."
-  :group 'yaml-ts-mode
+  :group 'pyaml-ts-mode
   :version "31.1"
   :type '(repeat string))
 
-(defvar yaml-ts-mode--syntax-table
+(defvar pyaml-ts-mode--syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?#  "<"  table)
     (modify-syntax-entry ?\n ">"  table)
@@ -64,19 +67,19 @@ to the yamllint command."
     (modify-syntax-entry ?\) "."  table)
     (modify-syntax-entry ?\' "\"" table)
     table)
-  "Syntax table for `yaml-ts-mode'.")
+  "Syntax table for `pyaml-ts-mode'.")
 
-(defvar yaml-ts-mode--font-lock-settings
+(defvar pyaml-ts-mode--font-lock-settings
   (treesit-font-lock-rules
-   :language 'yaml
+   :language 'pyaml
    :feature 'bracket
    '((["[" "]" "{" "}"]) @font-lock-bracket-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'comment
    '((comment) @font-lock-comment-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'constant
    '([(boolean_scalar)
       (null_scalar)
@@ -84,23 +87,23 @@ to the yamllint command."
       (tag_directive)
       (yaml_directive)] @font-lock-constant-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'delimiter
    '((["," ":" "-" ">" "?" "|"]) @font-lock-delimiter-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'misc-punctuation
    '((["---" "..." "&" "*"]) @font-lock-misc-punctuation-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'number
    '([(float_scalar) (integer_scalar)] @font-lock-number-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'type
    '([(alias_name) (anchor_name) (tag)] @font-lock-type-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'string
    :override t
    '([(block_scalar)
@@ -108,12 +111,12 @@ to the yamllint command."
       (single_quote_scalar)
       (string_scalar)] @font-lock-string-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'escape-sequence
    :override t
    '((escape_sequence) @font-lock-escape-face)
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'property
    :override t
    '((block_mapping_pair
@@ -134,20 +137,20 @@ to the yamllint command."
          (flow_node
           [(double_quote_scalar) (single_quote_scalar)] @font-lock-property-use-face))))
 
-   :language 'yaml
+   :language 'pyaml
    :feature 'error
    :override t
    '((ERROR) @font-lock-warning-face))
-  "Tree-sitter font-lock settings for `yaml-ts-mode'.")
+  "Tree-sitter font-lock settings for `pyaml-ts-mode'.")
 
-(defvar yaml-ts-mode--font-lock-feature-list
+(defvar pyaml-ts-mode--font-lock-feature-list
   '((comment)
     (string type)
     (constant escape-sequence number property)
     (bracket delimiter error misc-punctuation))
-  "Tree-sitter font-lock feature list for `yaml-ts-mode'.")
+  "Tree-sitter font-lock feature list for `pyaml-ts-mode'.")
 
-(defun yaml-ts-mode--fill-paragraph (&optional justify)
+(defun pyaml-ts-mode--fill-paragraph (&optional justify)
   "Fill paragraph.
 Behaves like `fill-paragraph', but respects block node
 boundaries.  JUSTIFY is passed to `fill-paragraph'."
@@ -171,7 +174,7 @@ boundaries.  JUSTIFY is passed to `fill-paragraph'."
          (fill-comment-paragraph justify))))
     t))
 
-(defun yaml-ts-mode--defun-name (node)
+(defun pyaml-ts-mode--defun-name (node)
   "Return the defun name of NODE.
 Return nil if there is no name or if NODE is not a defun node."
   (when (equal (treesit-node-type node) "block_mapping_pair")
@@ -179,26 +182,26 @@ Return nil if there is no name or if NODE is not a defun node."
                         node "key")
                        t)))
 
-(defvar yaml-ts-mode--outline-nodes
+(defvar pyaml-ts-mode--outline-nodes
   (rx (or "block_mapping_pair" "block_sequence_item"))
   "Node names for outline headings.")
 
-(defun yaml-ts-mode--outline-predicate (node)
+(defun pyaml-ts-mode--outline-predicate (node)
   "Limit outlines to top-level mappings."
-  (when (string-match-p yaml-ts-mode--outline-nodes (treesit-node-type node))
-    (not (treesit-node-top-level node yaml-ts-mode--outline-nodes))))
+  (when (string-match-p pyaml-ts-mode--outline-nodes (treesit-node-type node))
+    (not (treesit-node-top-level node pyaml-ts-mode--outline-nodes))))
 
 ;;; Flymake integration
-(defvar-local yaml-ts-mode--flymake-process nil
+(defvar-local pyaml-ts-mode--flymake-process nil
   "Store the Flymake process.")
 
-(defun yaml-ts-mode-flymake (report-fn &rest _args)
-  "YAML backend for Flymake.
+(defun pyaml-ts-mode-flymake (report-fn &rest _args)
+  "PYAML backend for Flymake.
 Calls REPORT-FN directly."
-  (when (process-live-p yaml-ts-mode--flymake-process)
-    (kill-process yaml-ts-mode--flymake-process))
+  (when (process-live-p pyaml-ts-mode--flymake-process)
+    (kill-process pyaml-ts-mode--flymake-process))
   (let ((yamllint (executable-find "yamllint"))
-        (params (append yaml-ts-mode-yamllint-options '("-f" "parsable" "-")))
+        (params (append pyaml-ts-mode-yamllint-options '("-f" "parsable" "-")))
         (source (current-buffer))
         (diagnostics-pattern (eval-when-compile
                                (rx bol (+? nonl) ":" ; every diagnostic line start with the filename
@@ -214,19 +217,19 @@ Calls REPORT-FN directly."
         (error "Unable to find yamllint command")
       (save-restriction
         (widen)
-        (setq yaml-ts-mode--flymake-process
+        (setq pyaml-ts-mode--flymake-process
               (make-process
-               :name "yaml-ts-mode-flymake"
+               :name "pyaml-ts-mode-flymake"
                :noquery t
                :connection-type 'pipe
-               :buffer (generate-new-buffer " *yaml-ts-mode-flymake*")
+               :buffer (generate-new-buffer " *pyaml-ts-mode-flymake*")
                :command `(,yamllint ,@params)
                :sentinel
                (lambda (proc _event)
                  (when (eq 'exit (process-status proc))
                    (unwind-protect
                        (if (with-current-buffer source
-                             (eq proc yaml-ts-mode--flymake-process))
+                             (eq proc pyaml-ts-mode--flymake-process))
                            (with-current-buffer (process-buffer proc)
                              (goto-char (point-min))
                              (let (diags)
@@ -253,17 +256,17 @@ Calls REPORT-FN directly."
                                  (funcall report-fn diags))))
                          (flymake-log :warning "Canceling obsolete check %s" proc))
                      (kill-buffer (process-buffer proc)))))))
-        (process-send-region yaml-ts-mode--flymake-process (point-min) (point-max))
-        (process-send-eof yaml-ts-mode--flymake-process)))))
+        (process-send-region pyaml-ts-mode--flymake-process (point-min) (point-max))
+        (process-send-eof pyaml-ts-mode--flymake-process)))))
 
 ;;;###autoload
-(define-derived-mode yaml-ts-mode text-mode "YAML"
+(define-derived-mode pyaml-ts-mode prog-mode "PYAML"
   "Major mode for editing YAML, powered by tree-sitter."
-  :group 'yaml
-  :syntax-table yaml-ts-mode--syntax-table
+  :group 'pyaml
+  :syntax-table pyaml-ts-mode--syntax-table
 
-  (when (treesit-ensure-installed 'yaml)
-    (setq treesit-primary-parser (treesit-parser-create 'yaml))
+  (when (treesit-ensure-installed 'pyaml)
+    (setq treesit-primary-parser (treesit-parser-create 'pyaml))
 
     ;; Comments.
     (setq-local comment-start "# ")
@@ -274,18 +277,18 @@ Calls REPORT-FN directly."
     (setq-local indent-tabs-mode nil)
 
     ;; Font-lock.
-    (setq-local treesit-font-lock-settings yaml-ts-mode--font-lock-settings)
-    (setq-local treesit-font-lock-feature-list yaml-ts-mode--font-lock-feature-list)
+    (setq-local treesit-font-lock-settings pyaml-ts-mode--font-lock-settings)
+    (setq-local treesit-font-lock-feature-list pyaml-ts-mode--font-lock-feature-list)
 
-    (setq-local fill-paragraph-function #'yaml-ts-mode--fill-paragraph)
+    (setq-local fill-paragraph-function #'pyaml-ts-mode--fill-paragraph)
 
     ;; Navigation.
     (setq-local treesit-defun-type-regexp "block_mapping_pair")
-    (setq-local treesit-defun-name-function #'yaml-ts-mode--defun-name)
+    (setq-local treesit-defun-name-function #'pyaml-ts-mode--defun-name)
     (setq-local treesit-defun-tactic 'top-level)
 
     (setq-local treesit-thing-settings
-                `((yaml
+                `((pyaml
                    (list ,(rx (or "block_mapping_pair" "flow_sequence")))
                    (sentence ,"block_mapping_pair"))))
 
@@ -294,10 +297,10 @@ Calls REPORT-FN directly."
                 '((nil "\\`block_mapping_pair\\'" nil nil)))
 
     ;; Outline minor mode.
-    (setq-local treesit-outline-predicate #'yaml-ts-mode--outline-predicate)
+    (setq-local treesit-outline-predicate #'pyaml-ts-mode--outline-predicate)
 
     ;; Flymake
-    (add-hook 'flymake-diagnostic-functions #'yaml-ts-mode-flymake nil 'local)
+    (add-hook 'flymake-diagnostic-functions #'pyaml-ts-mode-flymake nil 'local)
 
     (treesit-major-mode-setup)
 
@@ -312,27 +315,27 @@ Calls REPORT-FN directly."
     (kill-local-variable 'forward-sexp-function)
     (kill-local-variable 'show-paren-data-function)))
 
-(derived-mode-add-parents 'yaml-ts-mode '(yaml-mode))
+(derived-mode-add-parents 'pyaml-ts-mode '(pyaml-mode))
 
 ;;;###autoload
-(defun yaml-ts-mode-maybe ()
-  "Enable `yaml-ts-mode' when its grammar is available.
+(defun pyaml-ts-mode-maybe ()
+  "Enable `pyaml-ts-mode' when its grammar is available.
 Also propose to install the grammar when `treesit-enabled-modes'
 is t or contains the mode name."
   (declare-function treesit-language-available-p "treesit.c")
-  (if (or (treesit-language-available-p 'yaml)
+  (if (or (treesit-language-available-p 'pyaml)
           (eq treesit-enabled-modes t)
-          (memq 'yaml-ts-mode treesit-enabled-modes))
-      (yaml-ts-mode)
+          (memq 'pyaml-ts-mode treesit-enabled-modes))
+      (pyaml-ts-mode)
     (fundamental-mode)))
 
 ;;;###autoload
 (when (boundp 'treesit-major-mode-remap-alist)
-  (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-ts-mode-maybe))
+  (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . pyaml-ts-mode-maybe))
   ;; To be able to toggle between an external package and core ts-mode:
   (add-to-list 'treesit-major-mode-remap-alist
-               '(yaml-mode . yaml-ts-mode)))
+               '(pyaml-mode . pyaml-ts-mode)))
 
-(provide 'yaml-ts-mode)
+(provide 'pyaml-ts-mode)
 
-;;; yaml-ts-mode.el ends here
+;;; pyaml-ts-mode.el ends here
