@@ -47,9 +47,11 @@
              '(pyaml "libtree-sitter-pyaml" "tree_sitter_yaml"))
 
 (defgroup pyaml-ts-mode nil
-  "Major mode for editing PYAML files."
+  "Major mode for editing YAML files as programming text."
   :prefix "pyaml-ts-mode-"
-  :group 'languages)
+  :group 'languages
+  :link '(url-link :tag "GitHub" "https://github.com/steve-downey/pyaml-ts-mode.git")
+  :link '(emacs-commentary-link :tag "Commentary" "pyaml"))
 
 (defcustom pyaml-ts-mode-yamllint-options nil
   "Additional options to pass to yamllint command used for Flymake support.
@@ -58,6 +60,47 @@ to the yamllint command."
   :group 'pyaml-ts-mode
   :version "31.1"
   :type '(repeat string))
+
+;;; Drawn from neocamel: https://github.com/bbatsov/neocaml/blob/06794d8d9ae1180a37b71b02ed8eadd464129b73/neocaml.el#L125-L168
+(defconst pyaml-ts-mode-version "0.0.1")
+
+;;;###autoload
+(defun pyaml-ts-mode-version ()
+  "Display the current package version in the minibuffer.
+Fallback to `neocaml-version' when the package version is missing.
+When called from other Elisp code returns the version instead of
+displaying it."
+  (interactive)
+  (let ((pkg-version (package-get-version)))
+    (if (called-interactively-p 'interactively)
+        (if pkg-version
+            (message "pyaml-ts-mode %s (package: %s)" pyaml-ts-mode-version pkg-version)
+          (message "pyaml-ts-mode %s" pyaml-ts-mode-version))
+      (or pkg-version pyaml-ts-mode-version))))
+
+(defconst pyaml-ts-mode-grammar-recipes
+  '((pyaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" :commit "4463985dfccc640f3d6991e3396a2047610cf5f8"))
+  "Tree-sitter grammar recipes for YAML.
+Each entry is a list of (LANGUAGE URL REV SOURCE-DIR).
+Suitable for use as the value of `treesit-language-source-alist'.")
+
+;;;###autoload
+(defun pyaml-ts-mode-install-grammars (&optional force)
+  "Install required language grammars if not already available.
+With prefix argument FORCE, reinstall grammars even if they are
+already installed.  This is useful after upgrading pyaml-ts-mode to a
+version that requires a newer grammar."
+  (interactive "P")
+  (dolist (recipe pyaml-ts-mode-grammar-recipes)
+    (let ((grammar (car recipe)))
+      (when (or force (not (treesit-language-available-p grammar nil)))
+        (message "Installing %s tree-sitter grammar..." grammar)
+        ;; `treesit-language-source-alist' is dynamically scoped.
+        ;; Binding it in this let expression allows
+        ;; `treesit-install-language-grammar' to pick up the grammar recipes
+        ;; without modifying what the user has configured themselves.
+        (let ((treesit-language-source-alist pyaml-ts-mode-grammar-recipes))
+          (treesit-install-language-grammar grammar))))))
 
 (defvar pyaml-ts-mode--syntax-table
   (let ((table (make-syntax-table)))
@@ -334,9 +377,21 @@ is t or contains the mode name."
 ;;;###autoload
 (when (boundp 'treesit-major-mode-remap-alist)
   (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . pyaml-ts-mode-maybe))
-  ;; To be able to toggle between an external package and core ts-mode:
+  ;; To be able to toggle between an external package and pyaml-ts-mode:
   (add-to-list 'treesit-major-mode-remap-alist
-               '(pyaml-mode . pyaml-ts-mode)))
+               '(yaml-mode . pyaml-ts-mode)))
+
+;;;###autoload
+(progn
+  (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . pyaml-ts-mode))
+  )
+
+;;; Drawn from neocaml: https://github.com/bbatsov/neocaml/blob/06794d8d9ae1180a37b71b02ed8eadd464129b73/neocaml.el#L1457-L1460
+
+;; Eglot integration: set the language IDs that ocamllsp expects.
+;; These symbol properties are consulted by eglot when it cannot
+;; derive the correct language-id from the major-mode name.
+(put 'pyaml-ts-mode 'eglot-language-id "yaml")
 
 (provide 'pyaml-ts-mode)
 
