@@ -154,4 +154,126 @@ git merge --ff-only create-pyaml
 
 ** Start the rest of the work.
 
-* TBD -- How this works out next update
+* Tracking upstream after the Emacs 31 release
+Now that Emacs 31 is released, the two upstream branches have different
+jobs:
+
+- ~master~ (trunk) :: All new development.  Every feature, refactor, and
+  cleanup for the next release lands here first.  This is the branch to
+  sync from.
+- ~emacs-31~ (release branch) :: Bug fixes only, no new features.  Fixes
+  land here and upstream merges the release branch into ~master~
+  periodically, so trunk is effectively a superset of the release branch
+  with some lag.
+
+So the routine is: *sync from ~master~*.  Only look at ~emacs-31~
+separately to pick up a fix that matters before upstream gets around to
+merging it into trunk; taking it early is harmless, because when the
+merge does reach trunk the change is already there and applies as a
+no-op.
+
+** Sync log
+The base for the next diff is the last upstream revision synced, so
+record it here as each sync happens.
+
+| Date       | Upstream branch | Upstream revision | Notes                                                |
+|------------+-----------------+-------------------+------------------------------------------------------|
+| 2026-04-18 | master          | ~18fd809a3e~      | ~lisp/textmodes/~ subtree split base                 |
+| 2026-09-13 | master          | ~f0430371c8~      | Flymake fix, ~treesit-ready-p~, comment/tab settings |
+
+** Refresh the tracking branches
+In the bare ~emacs.git~ set up in /Fork emacs-mirror/mirror and set up
+tracking/ above:
+
+#+begin_src bash
+cd ~/src/emacs-mirror/upstream-copy/emacs.git
+git fetch --all --tags
+
+# upstream-master stays a pristine copy of upstream trunk
+cd ../upstream-master
+git merge --ff-only upstream/master
+
+# A worktree for the release branch, for checking fixes not yet in trunk
+cd ../emacs.git
+git worktree add -b upstream-emacs-31 ../upstream-emacs-31 upstream/emacs-31
+git branch -u upstream/emacs-31 upstream-emacs-31
+#+end_src
+
+** Check trunk for changes
+Diff the file against the last synced revision from the sync log:
+
+#+begin_src bash
+cd ~/src/emacs-mirror/upstream-copy/upstream-master
+git log --oneline <last-synced-rev>..upstream/master -- lisp/textmodes/yaml-ts-mode.el
+git diff <last-synced-rev>..upstream/master -- lisp/textmodes/yaml-ts-mode.el
+#+end_src
+
+And the same against the release branch, to see whether it carries a fix
+trunk has not merged yet:
+
+#+begin_src bash
+git log --oneline upstream/master..upstream/emacs-31 -- lisp/textmodes/yaml-ts-mode.el
+#+end_src
+
+If both are empty there is nothing to pull in.
+
+** Re-split and pull into pyaml
+#+begin_src bash
+# In the upstream-copy workarea, refresh the split with --rejoin
+cd ../track-split-lisp-textmodes
+git merge --ff-only upstream/master
+git subtree split --prefix=lisp/textmodes/ --branch=split-lisp-textmodes --rejoin
+
+# In the pyaml repo
+cd ~/src/pyaml-ts-mode/main
+git fetch upstream-copy
+git subtree pull --prefix=lisp upstream-copy split-lisp-textmodes
+#+end_src
+
+Expect noise from the merge, because this side of the subtree deleted
+every textmode file except one and renamed that one:
+
+- Changes to ~yaml-ts-mode.el~ arrive via rename detection and apply to
+  ~pyaml-ts-mode.el~, but the ~yaml-~ prefixes come with them and have to
+  be renamed to ~pyaml-~ by hand.
+- A textmode file deleted here that upstream has since modified is a
+  modify/delete conflict.  Resolve it by keeping the deletion:
+  ~git rm <file>~.
+
+** Porting the diff by hand
+When the subtree machinery is not available -- no local clone of the
+Emacs fork, say -- the same result can be had from the plain diff, since
+what is being tracked is a single file:
+
+#+begin_src bash
+base=<last-synced-rev>
+for rev in $base master; do
+    curl -sS -o "yaml-ts-mode.$rev.el" \
+      "https://raw.githubusercontent.com/emacs-mirror/emacs/$rev/lisp/textmodes/yaml-ts-mode.el"
+done
+diff -u "yaml-ts-mode.$base.el" yaml-ts-mode.master.el \
+  | sed -e 's/yaml-ts-mode/pyaml-ts-mode/g' -e "s/'yaml/'pyaml/g" -e 's/`yaml/`pyaml/g' \
+  | patch -p0 lisp/pyaml-ts-mode.el
+#+end_src
+
+This leaves no subtree metadata behind, so note the upstream revision in
+the commit message and add it to the sync log.  A later
+~git subtree pull~ will not know the port happened and will offer the
+same changes again; they apply as no-ops.
+
+** What not to pull in
+Some of the divergence from upstream is deliberate and should survive
+every sync:
+
+- ~prog-mode~ rather than ~text-mode~ as the parent mode, and the ~PYAML~
+  mode line name -- the whole point of the fork.
+- The ~pyaml~ language symbol, and the ~treesit-load-name-override-list~
+  entry mapping it back to ~tree_sitter_yaml~.
+- The grammar pin.  Upstream still pins ~b733d3f5~ (grammar 0.7.0,
+  2024-12-04); this fork pins the newer ~4463985d~ (2026-01-25), which
+  fixes multiline strings without indent.  Take an upstream bump only
+  when it is newer than the pin here.
+- The package scaffolding that an in-tree Emacs file has no use for:
+  ~pyaml-ts-mode-version~, ~pyaml-ts-mode-install-grammars~, the
+  ~defgroup~ links, the eglot language id, and the ~auto-mode-alist~ and
+  ~treesit-major-mode-remap-alist~ autoloads.
