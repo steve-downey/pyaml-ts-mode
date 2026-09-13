@@ -176,10 +176,21 @@ no-op.
 The base for the next diff is the last upstream revision synced, so
 record it here as each sync happens.
 
-| Date       | Upstream branch | Upstream revision | Notes                                                |
-|------------+-----------------+-------------------+------------------------------------------------------|
-| 2026-04-18 | master          | ~18fd809a3e~      | ~lisp/textmodes/~ subtree split base                 |
-| 2026-09-13 | master          | ~f0430371c8~      | Flymake fix, ~treesit-ready-p~, comment/tab settings |
+Record the *upstream* SHA, from ~emacs-mirror/emacs~ or Savannah.  The
+SHA that ~git subtree~ writes into its commit message is the tip of the
+split branch, which is a synthetic commit: it carries the upstream
+commit's message, author and date, but its own SHA exists only in the
+split branch and in this repo, and it is a 404 upstream.  That is why
+the first row below has no usable revision -- the subtree add recorded
+~18fd809a3e~, which is the split commit, and the upstream commit it was
+made from has to be identified by its message instead.
+
+| Date       | Upstream branch | Upstream revision | Notes                                                    |
+|------------+-----------------+-------------------+----------------------------------------------------------|
+| 2026-04-18 | master          | not recorded      | Split base; split tip ~18fd809a3e~ = "Filter out some    |
+|            |                 |                   | range settings in markdown-ts-mode", Yuan Fu, 2026-04-02 |
+| 2026-09-13 | master          | ~f0430371c8~      | Flymake fix, ~treesit-ready-p~, comment/tab settings;    |
+|            |                 |                   | ported by hand, no subtree metadata                      |
 
 ** Refresh the tracking branches
 In the bare ~emacs.git~ set up in /Fork emacs-mirror/mirror and set up
