@@ -37,6 +37,11 @@
 (declare-function treesit-node-type "treesit.c")
 (declare-function treesit-node-child-by-field-name "treesit.c")
 
+;; `comment-start-line-regexp' is new in Emacs 31.1's successor.  Declare
+;; it so that byte-compiling against older Emacs versions does not warn
+;; about assignment to a free variable; setting it there is harmless.
+(defvar comment-start-line-regexp)
+
 (add-to-list
  'treesit-language-source-alist
  '(pyaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml"
@@ -297,8 +302,8 @@ Calls REPORT-FN directly."
                                                 :error)))
                                    (push (flymake-make-diagnostic
                                           source beg end type msg)
-                                         diags))
-                                 (funcall report-fn diags))))
+                                         diags)))
+                               (funcall report-fn diags)))
                          (flymake-log :warning "Canceling obsolete check %s" proc))
                      (kill-buffer (process-buffer proc)))))))
         (process-send-region pyaml-ts-mode--flymake-process (point-min) (point-max))
@@ -310,16 +315,20 @@ Calls REPORT-FN directly."
   :group 'pyaml
   :syntax-table pyaml-ts-mode--syntax-table
 
-  (when (treesit-ensure-installed 'pyaml)
+  ;; `treesit-ready-p' also checks for buffer size.
+  (when (and (treesit-ensure-installed 'pyaml)
+             (treesit-ready-p 'pyaml))
     (setq treesit-primary-parser (treesit-parser-create 'pyaml))
 
     ;; Comments.
     (setq-local comment-start "# ")
     (setq-local comment-end "")
     (setq-local comment-start-skip "#+ *")
+    (setq-local comment-start-line-regexp comment-start-skip)
 
     ;; Indentation.
     (setq-local indent-tabs-mode nil)
+    (setq-local tab-width 2)
 
     ;; Font-lock.
     (setq-local treesit-font-lock-settings pyaml-ts-mode--font-lock-settings)
