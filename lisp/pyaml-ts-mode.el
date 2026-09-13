@@ -37,11 +37,6 @@
 (declare-function treesit-node-type "treesit.c")
 (declare-function treesit-node-child-by-field-name "treesit.c")
 
-;; `comment-start-line-regexp' is new in Emacs 31.1's successor.  Declare
-;; it so that byte-compiling against older Emacs versions does not warn
-;; about assignment to a free variable; setting it there is harmless.
-(defvar comment-start-line-regexp)
-
 (add-to-list
  'treesit-language-source-alist
  '(pyaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml"
