@@ -27,5 +27,19 @@ Prog-mode YAML treesitter mode
 - [[file:lisp/pyaml-ts-mode.el::defun pyaml-ts-mode-install-grammars][pyaml-ts-mode-install-grammars]] :: (Re-)Install the tree-sitter grammar.
 - [[file:lisp/pyaml-ts-mode.el::defun pyaml-ts-mode-version][pyaml-ts-mode-version]] :: Display the loaded version number.
 
+* Development
+The tests are ERT, and need the tree-sitter grammar installed:
+
+#+begin_src bash
+make grammar   # install the tree-sitter grammar the tests need
+make compile   # byte-compile the mode
+make test      # run the ERT suite
+#+end_src
+
+Tests that need the grammar skip themselves when it is missing, and the
+Flymake tests skip themselves without =yamllint= on =PATH=.  Emacs 31 or
+later is required: the mode calls =treesit-ensure-installed=.  Override
+the binary with =make EMACS=/path/to/emacs test=.
+
 * Method for tracking upstream
 [[file:docs/forking-yaml-ts-mode.org][Forking yaml-ts-mode ]]
