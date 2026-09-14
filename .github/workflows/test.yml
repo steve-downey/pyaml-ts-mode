@@ -1,0 +1,79 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  # Catches upstream breaking the mode without anyone having to remember to
+  # look.  Scheduled runs only happen on the default branch.
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  test:
+    name: emacs ${{ matrix.emacs }}
+    runs-on: ubuntu-latest
+    # Trunk moves on its own schedule; a failure there is news, not a
+    # broken build.
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The release, as installed by users.
+          - emacs: '31.1'
+          # The emacs-31 branch: the release plus its bug fixes.
+          - emacs: release-snapshot
+          # Trunk, where new work lands and where the mode is synced from.
+          # This is also the only Emacs where `comment-start-line-regexp'
+          # is a real variable.
+          - emacs: snapshot
+            experimental: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Installs a prebuilt Emacs from the nix-emacs-ci binary cache --
+      # nothing is compiled here.  The same builds are published as
+      # container images if that ever suits better: silex/emacs:31.1-ci.
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs }}
+
+      - name: Install yamllint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yamllint
+
+      # The grammar is a small C build, but there is no reason to repeat it
+      # on every run.  Keyed on the file that holds the pin.
+      - name: Cache the tree-sitter grammar
+        uses: actions/cache@v4
+        with:
+          path: ~/.emacs.d/tree-sitter
+          key: >-
+            grammar-${{ runner.os }}-${{ matrix.emacs }}-${{
+            hashFiles('lisp/pyaml-ts-mode.el') }}
+
+      - name: Install the tree-sitter grammar
+        run: make grammar
+
+      # Tests skip themselves when the grammar or yamllint is missing, so
+      # without this a broken environment would look like a green run.
+      - name: Check the toolchain, so tests cannot skip silently
+        run: |
+          emacs --version
+          emacs -Q --batch --eval \
+            '(unless (treesit-available-p)
+               (error "This Emacs was built without tree-sitter support"))'
+          emacs -Q --batch -L lisp --eval \
+            '(progn (require (quote pyaml-ts-mode))
+                    (unless (treesit-language-available-p (quote pyaml))
+                      (error "The pyaml grammar did not install")))'
+          yamllint --version
+
+      - name: Byte-compile, warnings are errors
+        run: make lint
+
+      - name: Run the tests
+        run: make test

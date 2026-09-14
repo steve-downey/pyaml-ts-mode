@@ -27,5 +27,37 @@ Prog-mode YAML treesitter mode
 - [[file:lisp/pyaml-ts-mode.el::defun pyaml-ts-mode-install-grammars][pyaml-ts-mode-install-grammars]] :: (Re-)Install the tree-sitter grammar.
 - [[file:lisp/pyaml-ts-mode.el::defun pyaml-ts-mode-version][pyaml-ts-mode-version]] :: Display the loaded version number.
 
+* Development
+The tests are ERT, and need the tree-sitter grammar installed:
+
+#+begin_src bash
+make grammar   # install the tree-sitter grammar the tests need
+make compile   # byte-compile the mode
+make lint      # byte-compile with warnings as errors, as CI does
+make test      # run the ERT suite
+#+end_src
+
+Tests that need the grammar skip themselves when it is missing, and the
+Flymake tests skip themselves without =yamllint= on =PATH=.  Emacs 31 or
+later is required: the mode calls =treesit-ensure-installed=.  Override
+the binary with =make EMACS=/path/to/emacs test=.
+
+** Continuous integration
+[[file:.github/workflows/test.yml][The workflow]] runs the suite against three Emacsen: the =31.1= release,
+=release-snapshot= (the =emacs-31= branch, release plus its bug fixes),
+and =snapshot= (trunk, where the mode is synced from, and the only Emacs
+where =comment-start-line-regexp= is a real variable).  Trunk is allowed
+to fail: a break there is news rather than a broken build.
+
+Emacs is installed prebuilt from the [[https://github.com/purcell/nix-emacs-ci][nix-emacs-ci]] binary cache, so no
+run compiles it.  The same builds exist as container images --
+=silex/emacs:31.1-ci= and friends -- if a container ever suits better.
+The grammar build is cached, keyed on the file holding its pin.
+
+Since tests skip themselves without the grammar or =yamllint=, the
+workflow asserts both are present before running them; otherwise a
+broken environment would look like a green run.  It also runs weekly, to
+catch upstream breaking the mode without anyone having to look.
+
 * Method for tracking upstream
 [[file:docs/forking-yaml-ts-mode.org][Forking yaml-ts-mode ]]
