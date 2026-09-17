@@ -88,7 +88,7 @@ Suitable for use as the value of `treesit-language-source-alist'.")
 (defun pyaml-ts-mode-install-grammars (&optional force)
   "Install required language grammars if not already available.
 With prefix argument FORCE, reinstall grammars even if they are
-already installed.  This is useful after upgrading pyaml-ts-mode to a
+already installed.  This is useful after upgrading `pyaml-ts-mode' to a
 version that requires a newer grammar."
   (interactive "P")
   (dolist (recipe pyaml-ts-mode-grammar-recipes)
@@ -232,7 +232,8 @@ Return nil if there is no name or if NODE is not a defun node."
   "Node names for outline headings.")
 
 (defun pyaml-ts-mode--outline-predicate (node)
-  "Limit outlines to top-level mappings."
+  "Limit outlines to top-level mappings.
+Argument NODE the node to test."
   (when (string-match-p pyaml-ts-mode--outline-nodes (treesit-node-type node))
     (not (treesit-node-top-level node pyaml-ts-mode--outline-nodes))))
 
